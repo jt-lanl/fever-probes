@@ -1,0 +1,75 @@
+zip -r fever-data.zip Data
+zip -r fever-src.zip NotesOnSoftware.txt hamming.py mkoblist.py offby.py probe.py probemulti.py probesingle.py readseq.py tictoc.py probepair.py
+
+
+PYTHON FILES:
+
+hamming.py
+mkoblist.py
+offby.py
+probe.py
+probemulti.py
+probepair.py
+probesingle.py
+readseq.py
+tictoc.py
+
+MAIN EXECUTABLES:
+
+probesingle:
+   imports readseq, offby, probe, hamming   
+
+probemulti: 
+   imports readseq, offby, probe, hamming
+
+SUPPORT LIBRARIES:
+
+readseq: reads fasta/mase/tbl and raw sequence files
+
+offby: class encapsulates mkoblist
+   imports mkoblist, probe, hamming
+
+mkoblist: creates data structure to speed up off-by kmer matching
+   imports hamming
+
+probe: various utilities for kmers, 
+   imports hamming
+
+tictoc: this is imported by some code just to help benchmark performance;
+it is not logically necessary.
+
+TO GET DETAILED USAGE MESSAGE:
+
+   >>> python probemulti.py -h
+
+   >>> python probesingle.py -h
+
+SIMPLE EXAMPLE:
+
+   >>> python probemulti.py -K31 -n4 -o1 --gc 15 --stem 3 Data/37-one-per-outbreak-filoviruses.tbl 
+
+   produces a cocktail with 4 probes (31-mers) which optimize off-by-1 performance,
+   subject to a constraint of GC content of at least 15, and hairpin stem lenght of at most 3.
+
+   >>> python probesingle.py -K31 Data/pa.fasta
+
+   produces many candidate probes (with varying GC and hairpin stemlength values) that
+   optimize exact coverage.  There are many options; eg:
+
+   >>> python probesingle.py -K31 Dat/pa.fasta --exact Data/HongKong68.fasta
+
+   restricts candidate probes to those that appear (exactly) in the HongKong sequence
+
+
+NOTES:
+
+May be room for speedup
+1/ Parallelize the loop over fullepiset in setup
+2/ Make new structure; or 
+   function kmerify_withneighbors(k,seq) with lru_cache()
+
+Room for clarification
+oblist -> obstruct (??) offbystruct, obnbrs 
+
+   
+
