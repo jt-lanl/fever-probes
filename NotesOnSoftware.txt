@@ -61,15 +61,6 @@ SIMPLE EXAMPLE:
    restricts candidate probes to those that appear (exactly) in the HongKong sequence
 
 
-NOTES:
-
-May be room for speedup
-1/ Parallelize the loop over fullepiset in setup
-2/ Make new structure; or 
-   function kmerify_withneighbors(k,seq) with lru_cache()
-
-Room for clarification
-oblist -> obstruct (??) offbystruct, obnbrs 
 
    
 
