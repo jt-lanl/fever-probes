@@ -105,6 +105,8 @@ def main(args):
     kob = offby.kmeroffby(args.K,args.offby)
     allkmers = kob.all_kmers_exact(seqs)
     filtkmers = probe.filter_kmerset(allkmers.copy(),gc=args.gc,stem=args.stem)
+    if args.fix:
+        filtkmers.update( args.fix )
     toc("ok {:.4f} sec")
     vprint("original kmers:",len(allkmers))
     vprint("filtered kmers:",len(filtkmers))
@@ -119,7 +121,7 @@ def main(args):
     if args.fix:
         fix_kmers.extend( args.fix )
         N = args.n - len(fix_kmers)
-        xseqs = ko.uncovered_sequences(seqs, fix_kmers)
+        xseqs = kob.uncovered_sequences(seqs, fix_kmers)
         if len(xseqs)==0:
             print("Full coverage from fixed sequences!")
         vvprint("xseqs:",len(xseqs))

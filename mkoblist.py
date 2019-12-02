@@ -1,4 +1,3 @@
-
 import sys
 from collections import Counter
 from hamming import hamming
@@ -87,7 +86,7 @@ def mkoblist(E,fullepiset,subepiset=None,offby=1):
     """
     ## Return oblist, a dict() whose keys are epitopes in subepiset
     ## oblist[epi] is set()
-    ## of epitopes xepi such that 1 <= hamming(epi,xepi) <= offby
+    ## of epitopes xepi such that hamming(epi,xepi) <= offby
     ## with xepi taken from fullepiset
 
     oblist=dict()
@@ -97,7 +96,8 @@ def mkoblist(E,fullepiset,subepiset=None,offby=1):
     if offby==0:
         for epi in subepiset:
             oblist[epi]=set()
-        return oblist ## return full dict() of emptysets
+            oblist[epi].add(epi) ## include self, but that's all
+        return oblist
 
     s,ldict = offby_struct_prepare(E,fullepiset,offby)
 
