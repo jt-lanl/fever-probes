@@ -76,7 +76,8 @@ def mkoblist(E,fullepiset,subepiset=None,offby=1):
     """Given a container (set, list, etc) of epitopes (epi's); produce a
     dict() called oblist such that oblist[epi] is a set of all the
     epitopes whose hamming distance from epi is less than or equal to
-    offby.  Do NOT include epi in that list.
+    offby.  DO include epi in that list. (Note, earlier versions of
+    this routine did not include epi in the list.)
 
     if subepiset is supplied, it should be a subset of fullepiset, and
     the dict().keys will only include the subpeiset epi's, but the
@@ -108,10 +109,7 @@ def mkoblist(E,fullepiset,subepiset=None,offby=1):
         ## that contain a continguous substring match with epi
         ## This is a superset of xepi's that have hamming(epi,xepi)<=offby
         ## So we'll remove xepi's for which hamming > offby
-        ## (Also, we remove epi from oblist, so hamming >= 1)
 
-        #oblist[epi].remove(epi)
-        #oblist[epi].discard(epi) ## for situations in which epi is not in oblist[epi]
         xepi_toofar = [ xepi for xepi in oblist[epi] 
                         if hamming(xepi,epi) > offby ]
         for xepi in xepi_toofar:
