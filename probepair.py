@@ -1,9 +1,7 @@
 import sys
-
+import re
 from collections import Counter
 import argparse
-
-import dask
 
 import probe
 import offby
@@ -16,16 +14,20 @@ def getargs():
     paa = ap.add_argument
     paa("inseqfile",
         help="Input sequence file in fasta/mase/tbl format")
-    paa("--patt",
-        help="Pattern (eg, 'Zika') used for subset of sequences")
     paa("-K",type=int,required=True,
         help="K value for K-mers")
     paa("--gc","-g",type=int, default=0,
         help="minimum number of G/C in K-mer")
+    paa("--gcfrac",type=float, default=0,
+        help="minimum fraction of G/C in K-mer")
     paa("--stem","-s",type=int, default=0,
         help="maximum length of stem in stemloop structure")
     paa("--offby","-o",type=int, default=0,
-        help="matches are within this many characters")
+        help="string matches can be off by this many characters")
+    paa("--patt",
+        help="only use sequences whose names match this pattern (eg, 'Zika')")
+    paa("--rmdup",action="store_true",
+        help="remove duplicate sequences")
     paa("--verbose","-v",action="count",
         help="verbosity")
     args = ap.parse_args()
@@ -38,11 +40,8 @@ def best_pairs(kob,seqs,pool=None):
     ## cov[kmer] = #seqs in which kmer appears
     cov = kob.all_kmers_wcount(seqs,pool=pool)
 
-    ## Remove kmers with low GC content or long stem hpp [hairpin propensity]
-    ## NO!! This is already done by using 'pool'
-    ## probe.filter_kmerdict(cov,gc=gc,stem=stem)
-
-    ## could maybe use a more sophisticated key that also accounted for gc content
+    ## could maybe use a more sophisticated sort key
+    ## that also accounted for gc content
     kall = sorted(cov.keys(), key=cov.get, reverse=True)
 
     kx = None   ## kx=(ki,kj) is best pair so far
@@ -60,6 +59,10 @@ def best_pairs(kob,seqs,pool=None):
         ## Get the subset of sequences that are not covered by ki
         subseqs = kob.uncovered_sequences(seqs,[ki])
         vvprint(len(subseqs),"uncovered sequences")
+        if len(subseqs)==0:
+            print("Full coverage from single sequence:",ki)
+            kxlist.append([ki,ki])
+            return kxlist
 
         ## kall[i+1:] is the pool of remaining kmers
         covres = kob.all_kmers_wcount(subseqs,kall[i+1:])
@@ -124,10 +127,24 @@ def main(args):
             raise RuntimeError(f"Pattern /{args.patt}/ not found in any names")
         vprint("Number of Sequences:",len(seqs))
 
+
+    if args.rmdup: ## remove duplicate sequences
+        seqstrset = set() ## set of sequence strings
+        seqlist = list()  ## set of sequences (name,str)
+        for s in seqs:
+            if s.seq not in seqstrset:
+                seqlist.append(s)
+            seqstrset.add(s.seq)
+        seqs = seqlist
+        vprint("Number of Sequences:",len(seqs))
+
+    GCmin = max(args.gc, int(0.99+args.K*args.gcfrac))
+    vprint("min GC:",GCmin)
+
     tic("Prepare to prepare...")
     kob = offby.kmeroffby(args.K,args.offby)
     allkmers = kob.all_kmers_exact(seqs)
-    filtkmers = probe.filter_kmerset(allkmers.copy(),gc=args.gc,stem=args.stem)
+    filtkmers = probe.filter_kmerset(allkmers.copy(),gc=GCmin,stem=args.stem)
     toc("ok {:.4f} sec")
     vprint("original kmers:",len(allkmers))
     vprint("filtered kmers:",len(filtkmers))
@@ -138,19 +155,24 @@ def main(args):
     toc("ok {:.4f} sec")
     vprint("kob.size: %d kmers, %d neigbors" % kob.size())
 
-    #kpair = best_pair_filtered(args.K,seqs,gc=args.gc,stem=args.stem)
     tic("Begin timing best_pairs...\n")
     kpairlist = best_pairs(kob,seqs,pool=filtkmers) ## include filtkmers?
     toc("Best pairs: {:.4f} sec")
 
+    ## sort best pairs by GC content
+    def pair_mingc_key(kpair):
+        ki,kj = kpair
+        return -1*sum([probe.gc_content(ki),
+                       probe.gc_content(kj)])
+        
+    kpairlist = sorted(kpairlist,key=pair_mingc_key)
+
+    
     npair = min([len(kpairlist),10])
     print("Found",len(kpairlist),"equivalent pairs; printing",npair,"of them")
     tic()
-    slist=[]
     for kpair in kpairlist[:npair]:
-        slist.append( dask.delayed(printcoverage_pair)(seqs,kpair,args.offby))
-    slist = dask.compute(*slist)
-    for s in slist:
+        s = printcoverage_pair(seqs,kpair,args.offby)
         print(s)
     toc("Print coverage: {:.4f} sec")
 

@@ -16,25 +16,29 @@ def getargs():
     paa = ap.add_argument
     paa("inseqfile",
         help="Input sequence file in fasta/mase/tbl format")
-    paa("--fix",nargs='+',
-        help="Include (fix == don't alter) these probes")
-    paa("--patt",
-        help="Pattern (eg, 'Zika') used for subset of sequences")
-    paa("-K",type=int,required=True,
-        help="K value for K-mers")
     paa("-n",type=int,default=1,
         help="Number of probes")
+    paa("-K",type=int,required=True,
+        help="K value for K-mers")
     paa("--gc","-g",type=int, default=0,
         help="minimum number of G/C in K-mer")
+    paa("--gcfrac",type=float, default=0,
+        help="minimum fraction of G/C in K-mer")
     paa("--stem","-s",type=int, default=0,
         help="maximum length of stem in stemloop structure")
     paa("--offby","-o",type=int, default=0,
-        help="matches are within this many characters")
+        help="string matches can be off by this many characters")
+    paa("--patt",
+        help="only use sequences whose names match this pattern (eg, 'Zika')")
+    paa("--rmdup",action="store_true",
+        help="remove duplicate sequences")
+    paa("--fix",nargs='+',
+        help="include (fix == don't alter) these probes")
     paa("--tweak",action="store_true",
-        help="tweak solution")
+        help="tweak solution (sometimes achieves better coverage)")
     paa("--random","-r",action="store_true",
         help="use random initial conditions")
-    paa("--uncovered","-u",action="store_true",
+    paa("--uncovered",action="store_true",
         help="print out a list of the uncovered sequences")
     paa("--verbose","-v",action="count",
         help="verbosity")
@@ -101,10 +105,23 @@ def main(args):
             raise RuntimeError(f"Pattern /{args.patt}/ not found in any names")
         vprint("Number of Sequences:",len(seqs))
 
+    if args.rmdup: ## remove duplicate sequences
+        seqstrset = set() ## set of sequence strings
+        seqlist = list()  ## set of sequences (name,str)
+        for s in seqs:
+            if s.seq not in seqstrset:
+                seqlist.append(s)
+            seqstrset.add(s.seq)
+        seqs = seqlist
+        vprint("Number of Sequences:",len(seqs))
+
+    GCmin = max(args.gc, int(0.99+args.K*args.gcfrac))
+    vprint("min GC:",GCmin)
+
     tic("Prepare to prepare...")
     kob = offby.kmeroffby(args.K,args.offby)
     allkmers = kob.all_kmers_exact(seqs)
-    filtkmers = probe.filter_kmerset(allkmers.copy(),gc=args.gc,stem=args.stem)
+    filtkmers = probe.filter_kmerset(allkmers.copy(),gc=GCmin,stem=args.stem)
     if args.fix:
         filtkmers.update( args.fix )
     toc("ok {:.4f} sec")

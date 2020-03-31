@@ -16,28 +16,28 @@ def getargs():
     paa = ap.add_argument
     paa("inseqfile",
         help="Input sequence file in fasta/mase/tbl format")
-    paa("--patt",
-        help="Pattern (eg, 'Zika') used for subset of sequences")
-    paa("--exact","-x",
-        help="Input sequence file from which probe must match exactly")
     paa("-K",type=int,required=True,
         help="K value for K-mers")
-    paa("--eval","-e",
-        help="Evaluate specified K-mer")
-    paa("--offby","-o",type=int,default=0,
-        help="String matches can by off by this amount")
-    paa("--gc",type=int, default=0,
+    paa("--gc","-g",type=int, default=0,
         help="minimum number of G/C in K-mer")
     paa("--gcfrac",type=float, default=0,
         help="minimum fraction of G/C in K-mer")
-    paa("--stem",type=int, default=0,
+    paa("--stem","-s",type=int, default=0,
         help="maximum length of stem in stemloop structure")
+    paa("--offby","-o",type=int,default=0,
+        help="string matches can be off by this many characters")
+    paa("--patt",
+        help="only use sequences whose names match this pattern (eg, 'Zika')")
     paa("--rmdup",action="store_true",
-        help="Remove duplicate sequences")
-    paa("-u",action="store_true",
-        help="Only consider unconstrained matches")
+        help="remove duplicate sequences")
+    paa("--exact","-x",
+        help="input sequence file from which probe must match exactly")
+    paa("--eval","-e",
+        help="evaluate specified K-mer")
+    paa("--unconstrained",action="store_true",
+        help="ignore GC content and STEM length constraints")
     paa("--verbose","-v",action="count",
-        help="verbose")
+        help="verbosity")
     args = ap.parse_args()
     return args
         
@@ -143,7 +143,7 @@ def main(args):
     printcoverage_header(args.K)
     printcoverage(seqs,kall[0])
 
-    if args.u:
+    if args.unconstrained:
         return ## only look at unconstrained soln
 
     already_printed = set()
