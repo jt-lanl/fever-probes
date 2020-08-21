@@ -168,7 +168,7 @@ def main(args):
     full_kmer_list = fix_kmers + kmer_list
     tic("Print coverage...\n")
     ## Print coverage for various offby's
-    print(" n   -exact--   -offby-1   -offby-2  kmer                            GC LL SL stem")
+    print(" n   -exact--   -offby-1   -offby-2  D kmer                            GC LL SL stem")
     for i,kmer in enumerate(full_kmer_list):
         kmers = full_kmer_list[:i+1]
 
@@ -176,9 +176,10 @@ def main(args):
         c1 = probe.coverage_offby(seqs,kmers,offby=1)
         co = probe.coverage_offby(seqs,kmers,offby=2)
         stem = probe.longestStem(kmer)
-        print("%2d %4d %.3f %4d %.3f %4d %.3f  %s %2d %2d %2d %s" % 
+        dist = min( probe.kmer_seq_hamming(kmer,s) for s in seqs ) 
+        print("%2d %4d %.3f %4d %.3f %4d %.3f %2d %s %2d %2d %2d %s" % 
               (len(kmers),cx,cx/len(seqs),c1,c1/len(seqs),
-               co,co/len(seqs),kmer,probe.gc_content(kmer),
+               co,co/len(seqs),dist,kmer,probe.gc_content(kmer),
                probe.lenStemLoop(kmer,stem),len(stem),stem))
 
         if args.verbose and args.uncovered:
