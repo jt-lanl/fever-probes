@@ -167,6 +167,26 @@ def read_tbl(filename,rmdash=False):
 
     return seq_samples
 
+def columnize(str,col=70):
+    strarr = []
+    while len(str)>=col:
+        strarr.append( str[:col] )
+        str = str[col:]
+    if str:
+        strarr.append( str )
+    return strarr
+        
+
+
+def write_fasta(filename,seq_samples):
+    with open(filename,"w") as fout:
+        for s in seq_samples:
+            fout.write(">" + s.name + "\n")
+            for str in columnize(s.seq):
+                ## better to break these into 70 column units
+                fout.write(str + "\n")
+            
+
 if __name__ == "__main__":
     
     import argparse
